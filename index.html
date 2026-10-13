@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geography Hub - Газарзүйн Хичээл</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --accent-blue: #38bdf8;
+      --accent-purple: #a855f7;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+      --accent-yellow: #f59e0b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 50px; }
+
+    header {
+      background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100;
+      border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px;
+    }
+    .logo { font-size: 1.4rem; font-weight: 800; background: linear-gradient(to right, var(--accent-blue), var(--accent-green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    
+    .nav-tabs { display: flex; gap: 8px; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; }
+    .tab-btn { padding: 8px 14px; border: none; background: transparent; color: var(--text-muted); font-weight: 700; cursor: pointer; border-radius: 6px; transition: 0.3s; white-space: nowrap; font-size: 0.85rem; }
+    .tab-btn.active { background: var(--accent-green); color: #000; }
+
+    .nav-controls { display: flex; gap: 10px; align-items: center; }
+    .class-selector { display: flex; background: rgba(255, 255, 255, 0.05); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
+    .class-btn { padding: 5px 12px; border: none; background: transparent; color: var(--text-muted); font-weight: 700; cursor: pointer; border-radius: 6px; transition: 0.3s; font-size: 0.85rem; }
+    .class-btn.active { background: var(--accent-blue); color: #000; }
+
+    .admin-btn { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid var(--border); padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.85rem; }
+    .admin-btn:hover { background: var(--accent-purple); }
+
+    .container { max-width: 1100px; margin: 25px auto; padding: 0 15px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .section-title { font-size: 1.4rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .section-title::before { content: ''; width: 4px; height: 20px; background: var(--accent-green); border-radius: 2px; }
+
+    /* TAB 1: WHEELS & CARDS */
+    .wheels-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .wheel-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    .wheel-container { position: relative; width: 260px; height: 260px; margin: 15px 0; }
+    canvas { width: 100%; height: 100%; border-radius: 50%; border: 4px solid var(--border); }
+    .pointer { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-top: 20px solid var(--accent-red); z-index: 10; }
+    .spin-btn { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: 800; font-size: 0.95rem; cursor: pointer; background: linear-gradient(135deg, var(--accent-green), var(--accent-blue)); color: #0f172a; transition: 0.2s; }
+    .spin-btn:hover { opacity: 0.9; }
+    .reset-btn { margin-top: 10px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+
+    .flashcard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
+    .flashcard { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; cursor: pointer; transition: 0.3s; position: relative; min-height: 100px; display: flex; flex-direction: column; justify-content: space-between; }
+    .flashcard:hover { transform: translateY(-3px); border-color: var(--accent-green); }
+    .flashcard.answered { opacity: 0.5; border-color: var(--accent-green); }
+    .flashcard.answered::after { content: '✓'; position: absolute; top: 10px; right: 10px; background: var(--accent-green); color: #000; font-size: 0.7rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
+
+    /* TAB 2: MATCHING GAME */
+    .matching-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 800px; margin: 0 auto; }
+    .match-column { display: flex; flex-direction: column; gap: 10px; }
+    .match-card { background: var(--card-bg); border: 2px solid var(--border); padding: 15px; border-radius: 10px; text-align: center; font-weight: 700; cursor: pointer; transition: 0.2s; user-select: none; }
+    .match-card:hover { border-color: var(--accent-green); }
+    .match-card.selected { border-color: var(--accent-purple); background: rgba(168, 85, 247, 0.2); }
+    .match-card.matched { border-color: var(--accent-green); background: rgba(34, 197, 94, 0.2); opacity: 0.6; cursor: default; }
+
+    /* TAB 3: WORDLE / GUESS GAME */
+    .word-game-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 30px; text-align: center; max-width: 600px; margin: 0 auto; }
+    .word-hint { font-size: 1.1rem; margin-bottom: 20px; color: var(--accent-blue); }
+    .word-display { font-size: 2.2rem; letter-spacing: 12px; font-weight: 800; margin-bottom: 25px; font-family: monospace; }
+    .keyboard { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 500px; margin: 0 auto; }
+    .key-btn { width: 36px; height: 40px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: #fff; font-weight: 700; border-radius: 6px; cursor: pointer; }
+    .key-btn:disabled { opacity: 0.3; cursor: default; }
+
+    /* TAB 4: MEMORY GAME */
+    .memory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: 600px; margin: 0 auto; }
+    .mem-card { height: 90px; background: var(--card-bg); border: 2px solid var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; cursor: pointer; user-select: none; transition: 0.3s; text-align: center; padding: 5px; }
+    .mem-card.flipped { background: var(--accent-purple); border-color: #fff; color: #fff; }
+    .mem-card.matched { background: var(--accent-green); border-color: var(--accent-green); opacity: 0.7; }
+
+    /* TAB 5: SPEED QUIZ */
+    .quiz-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 25px; max-width: 650px; margin: 0 auto; }
+    .quiz-header { display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: 700; color: var(--accent-blue); }
+    .quiz-q { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; }
+    .quiz-options { display: flex; flex-direction: column; gap: 10px; }
+    .opt-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: #fff; text-align: left; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .opt-btn:hover { background: rgba(34, 197, 94, 0.2); border-color: var(--accent-green); }
+
+    /* Modals & Admin UI */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 1000; justify-content: center; align-items: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: #1e293b; border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 650px; max-height: 85vh; overflow-y: auto; padding: 25px; position: relative; }
+    .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
+
+    .admin-nav { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+    .admin-tab-btn { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.8rem; white-space: nowrap; }
+    .admin-tab-btn.active { background: var(--accent-purple); color: #fff; border-color: var(--accent-purple); }
+
+    .admin-section { display: none; }
+    .admin-section.active { display: block; }
+
+    .admin-item { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .admin-input { width: 100%; padding: 8px; background: #0f172a; color: #fff; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; }
+    .del-btn { background: var(--accent-red); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight:700; shrink:0; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">🌍Газарзүйн хичээл - Багш Б.Сувд</div>
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('wheels')">🎡 Хүрд</button>
+      <button class="tab-btn" onclick="switchTab('matching')">🔗 Холбох</button>
+      <button class="tab-btn" onclick="switchTab('word')">🧩 Үг таах</button>
+      <button class="tab-btn" onclick="switchTab('memory')">🃏 Memory</button>
+      <button class="tab-btn" onclick="switchTab('speed')">⚡ Speed Quiz</button>
+    </div>
+    <div class="nav-controls">
+      <div class="class-selector">
+        <button class="class-btn active" onclick="switchClass('8A')">8А</button>
+        <button class="class-btn" onclick="switchClass('8Б')">8Б</button>
+      </div>
+      <button class="admin-btn" onclick="openAdmin()">⚙️ Admin Panel</button>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <!-- TAB 1: WHEELS -->
+    <div id="tab-wheels" class="tab-content active">
+      <div class="wheels-grid">
+        <div class="wheel-card">
+          <h3>🎯 Сурагч сугалах (<span id="current-class-label">8А</span>)</h3>
+          <div class="wheel-container">
+            <div class="pointer"></div>
+            <canvas id="studentWheel"></canvas>
+          </div>
+          <button class="spin-btn" onclick="spinStudent()">Сурагч сонгох</button>
+        </div>
+        <div class="wheel-card">
+          <h3>❓ Асуулт сугалах</h3>
+          <div class="wheel-container">
+            <div class="pointer"></div>
+            <canvas id="questionWheel"></canvas>
+          </div>
+          <button class="spin-btn" onclick="spinQuestion()">Асуулт сонгох</button>
+          <button class="reset-btn" onclick="resetQuestions()">🔄 Асуултуудыг дахин сэргээх</button>
+        </div>
+      </div>
+      <div class="section-title">Газарзүйн Асуултын Сан (<span id="q-count">0</span>)</div>
+      <div class="flashcard-grid" id="flashcard-container"></div>
+    </div>
+
+    <!-- TAB 2: MATCHING GAME -->
+    <div id="tab-matching" class="tab-content">
+      <div class="section-title">🔗 Улс & Нийслэл / Нэр томьёо холбох</div>
+      <p style="text-align:center; color:var(--text-muted); margin-bottom:20px;">Зүүн талын зүйлийг баруун талын зөв харгалзах утгатай нь холбоорой!</p>
+      <div class="matching-container">
+        <div class="match-column" id="match-left"></div>
+        <div class="match-column" id="match-right"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: WORDLE / GUESS -->
+    <div id="tab-word" class="tab-content">
+      <div class="section-title">🧩 Газарзүйн Үг Таах</div>
+      <div class="word-game-box">
+        <div class="word-hint" id="word-hint">Тайлбар уншиж байна...</div>
+        <div class="word-display" id="word-display">_ _ _ _</div>
+        <div class="keyboard" id="keyboard"></div>
+        <button class="reset-btn" style="margin-top:20px;" onclick="initWordGame()">Дараагийн үг ➔</button>
+      </div>
+    </div>
+
+    <!-- TAB 4: MEMORY GAME -->
+    <div id="tab-memory" class="tab-content">
+      <div class="section-title">🃏 Санах Ой Хөгжүүлэх Карт</div>
+      <p style="text-align:center; color:var(--text-muted); margin-bottom:20px;">Ижил картнуудыг олж эргүүлээрэй!</p>
+      <div class="memory-grid" id="memory-grid"></div>
+      <div style="text-align:center; margin-top:20px;">
+        <button class="reset-btn" onclick="initMemoryGame()">🔄 Тоглоом эхнээс нь эхлүүлэх</button>
+      </div>
+    </div>
+
+    <!-- TAB 5: SPEED QUIZ -->
+    <div id="tab-speed" class="tab-content">
+      <div class="section-title">⚡ Түргэн Асуулт Хариулт</div>
+      <div class="quiz-box">
+        <div class="quiz-header">
+          <div>Асуулт: <span id="quiz-progress">1/5</span></div>
+          <div>Оноо: <span id="quiz-score">0</span></div>
+        </div>
+        <div class="quiz-q" id="quiz-question">Асуулт уншиж байна...</div>
+        <div class="quiz-options" id="quiz-options"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Admin Modal -->
+  <div class="modal" id="adminModal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeAdmin()">&times;</button>
+      <h2>⚙️ Админ Панел (Газарзүй)</h2>
+      <p style="color:var(--text-muted); margin-bottom:15px; font-size:0.85rem;">Бүх тоглоом болон ангийн өгөгдлийг эндээс удирдана уу</p>
+
+      <div class="admin-nav">
+        <button class="admin-tab-btn active" onclick="switchAdminSection('students')">👨‍🎓 Сурагчид</button>
+        <button class="admin-tab-btn" onclick="switchAdminSection('questions')">❓ Асуултууд</button>
+        <button class="admin-tab-btn" onclick="switchAdminSection('matching')">🔗 Холбох Тоглоом</button>
+        <button class="admin-tab-btn" onclick="switchAdminSection('word')">🧩 Үг Таах Тоглоом</button>
+      </div>
+
+      <!-- Admin Section: Students -->
+      <div id="admin-students" class="admin-section active">
+        <label style="font-weight:600; display:block; margin-bottom:5px;">Анги сонгох:</label>
+        <select id="admin-class-select" onchange="loadAdminStudents()" class="admin-input">
+          <option value="8A">8А бүлэг</option>
+          <option value="8Б">8Б бүлэг</option>
+        </select>
+        <label style="font-weight:600; display:block; margin-bottom:5px;">Сурагчдын нэрс (Таслалаар заглана уу):</label>
+        <textarea id="admin-student-list" rows="4" class="admin-input"></textarea>
+        <button class="spin-btn" onclick="saveStudents()">Сурагчид хадгалах</button>
+      </div>
+
+      <!-- Admin Section: Questions -->
+      <div id="admin-questions" class="admin-section">
+        <h3>Шинэ Асуулт нэмэх</h3>
+        <input type="text" id="new-q-text" placeholder="Асуулт (Жишээ: Хамгийн том далай юу вэ?)" class="admin-input" style="margin-top:8px;">
+        <input type="text" id="new-q-ans" placeholder="Зөв хариулт (Жишээ: Номхон далай)" class="admin-input">
+        <button class="spin-btn" onclick="addQuestion()">➕ Асуулт нэмэх</button>
+        <hr style="border-color: var(--border); margin: 20px 0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h3>Одоо байгаа асуултууд</h3>
+          <button class="del-btn" onclick="deleteAllQuestions()">Бүгдийг устгах</button>
+        </div>
+        <div id="admin-questions-list"></div>
+      </div>
+
+      <!-- Admin Section: Matching -->
+      <div id="admin-matching" class="admin-section">
+        <h3>Шинэ Хослол нэмэх</h3>
+        <input type="text" id="new-m-left" placeholder="Зүүн тал (Жишээ: Монгол)" class="admin-input" style="margin-top:8px;">
+        <input type="text" id="new-m-right" placeholder="Баруун тал (Жишээ: Улаанбаатар)" class="admin-input">
+        <button class="spin-btn" onclick="addMatchPair()">➕ Хослол нэмэх</button>
+        <hr style="border-color: var(--border); margin: 20px 0;">
+        <h3>Одоо байгаа хослолууд</h3>
+        <div id="admin-matching-list" style="margin-top:10px;"></div>
+      </div>
+
+      <!-- Admin Section: Wordle -->
+      <div id="admin-word" class="admin-section">
+        <h3>Шинэ Үг нэмэх</h3>
+        <input type="text" id="new-w-word" placeholder="Таах үг (Жишээ: CONTINENT)" class="admin-input" style="margin-top:8px;">
+        <input type="text" id="new-w-hint" placeholder="💡 Тайлбар заавар" class="admin-input">
+        <button class="spin-btn" onclick="addWordPair()">➕ Үг нэмэх</button>
+        <hr style="border-color: var(--border); margin: 20px 0;">
+        <h3>Одоо байгаа үгс</h3>
+        <div id="admin-word-list" style="margin-top:10px;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Result Modal -->
+  <div class="modal" id="resultModal">
+    <div class="modal-content" style="text-align:center;">
+      <div style="font-size:1.8rem; font-weight:800; color:var(--accent-green); margin-bottom:15px;" id="result-title">🎯 Сонгогдлоо!</div>
+      <div style="font-size:1.2rem; margin-bottom:20px;" id="result-body">---</div>
+      <div id="q-answer-box" style="display:none; background: rgba(255,255,255,0.05); padding:15px; border-radius:10px; margin-bottom:15px; border:1px solid var(--border);">
+        <button id="toggle-ans-btn" class="spin-btn" style="background:rgba(255,255,255,0.15); font-size:0.9rem; color:#fff;" onclick="revealAnswer()">👁️ Хариулт харах</button>
+        <div id="ans-text" style="display:none; color:var(--accent-green); font-weight:700; margin-top:5px;">---</div>
+      </div>
+      <div id="result-actions" style="display:flex; flex-direction:column; gap:10px;">
+        <button class="spin-btn" onclick="closeResult()">Хаах</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- GEOGRAPHY DEFAULT DATA ---
+    const defaultStudents = {
+      '8A': ["Ананд", "Ариунболд", "Бат-Эрдэнэ", "Билгүүн", "Болормаа", "Ганзориг", "Дулмаа", "Есөн-Эрдэнэ", "Золбоо", "Идэр", "Лхагва", "Мөнх-Эрдэнэ", "Наранбаатар", "Оюунчимэг", "Пүрэвсүрэн", "Сүхбат", "Төгөлдөр", "Уранзаяа", "Хүслэн", "Цогтбаатар", "Чингүүн", "Шинэбаяр", "Энхжин", "Эрхэмбаяр"],
+      '8Б': ["Амаржаргал", "Батбаяр", "Баярмаа", "Гантогос", "Даваадорж", "Дэлгэрмаа", "Есүй", "Итгэл", "Мөнхжин", "Наранзаяа", "Номин-Эрдэнэ", "Оргил", "Өлзийбаатар", "Содбилэг", "Тэмүүжин", "Уянга", "Хатанбаатар", "Цэнгэл", "Шижир", "Энхтөр", "Эрдэнэбулган", "Янжинлхам"]
+    };
+
+    const defaultQuestions = [
+      { id: 1, q: "Дэлхийн хамгийн том далай юу вэ?", a: "Номхон далай" },
+      { id: 2, q: "Монгол улсын хамгийн өндөр цэг юу вэ?", a: "Хүйтний оргил (4374м)" },
+      { id: 3, q: "Дэлхийн хамгийн урт мөрөн юу вэ?", a: "Амазон мөрөн" },
+      { id: 4, q: "Хамгийн олон хүн амтай тив юу вэ?", a: "Ази тив" },
+      { id: 5, q: "Дэлхийн хамгийн том халуун цөл юу вэ?", a: "Сахар цөл" },
+      { id: 6, q: "Эх газрын хамгийн гүн нуур юу вэ?", a: "Байгаль нуур" },
+      { id: 7, q: "Газар хөдлөлтийн хүчийг ямар шаталбараар хэмждэг вэ?", a: "Рихтерийн шаталбар" },
+      { id: 8, q: "Дэлхийн бөмбөрцгийг хойд, урд хагаст хуваадаг цэгэн шугамыг юу гэх вэ?", a: "Экватор (Эх баригч зааг)" },
+      { id: 9, q: "Дэлхийн хамгийн өндөр уулын оргил юу вэ?", a: "Эверест (Жомолунгма - 8848м)" },
+      { id: 10, q: "Австрали тивийн уугуул амьтдын жишээ нэрлэнэ үү?", a: "Кенгуру, Коала, Эму шувуу" },
+      { id: 11, q: "Монгол улс хэдэн аймагтай вэ?", a: "21 аймаг" },
+      { id: 12, q: "Наранд хамгийн ойр орших гараг юу вэ?", a: "Буд гараг (Mercury)" }
+    ];
+
+    const defaultMatchPairs = [
+      { left: "Монгол", right: "Улаанбаатар" },
+      { left: "Япон", right: "Токио" },
+      { left: "Франц", right: "Парис" },
+      { left: "Египет", right: "Каир" },
+      { left: "Бразил", right: "Бразилиа" }
+    ];
+
+    const defaultWordList = [
+      { word: "CONTINENT", hint: "Дэлхийн эх газар, тив" },
+      { word: "MOUNTAIN", hint: "Уул нуруу" },
+      { word: "VOLCANO", hint: "Дэлбэрдэг галт уул" },
+      { word: "OCEAN", hint: "Дэлхийн далай" }
+    ];
+
+    let currentClass = '8A';
+    let students = JSON.parse(localStorage.getItem('geo_students')) || defaultStudents;
+    let questions = JSON.parse(localStorage.getItem('geo_questions')) || defaultQuestions;
+    let matchPairs = JSON.parse(localStorage.getItem('geo_match_pairs')) || defaultMatchPairs;
+    let wordList = JSON.parse(localStorage.getItem('geo_word_list')) || defaultWordList;
+    let activeQuestions = [...questions];
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+
+      if(tabId === 'matching') initMatchingGame();
+      if(tabId === 'word') initWordGame();
+      if(tabId === 'memory') initMemoryGame();
+      if(tabId === 'speed') initSpeedQuiz();
+    }
+
+    function switchClass(cls) {
+      currentClass = cls;
+      document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('current-class-label').innerText = cls;
+      drawWheel('studentWheel', students[currentClass]);
+    }
+
+    function drawWheel(canvasId, items) {
+      const canvas = document.getElementById(canvasId);
+      if(!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = 260; canvas.height = 260;
+      const numItems = items.length;
+      if (numItems === 0) {
+        ctx.clearRect(0, 0, 260, 260);
+        ctx.fillStyle = '#94a3b8'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText("Хоосон байна!", 130, 130);
+        return;
+      }
+      const arc = (2 * Math.PI) / numItems;
+      const colors = ['#22c55e', '#38bdf8', '#a855f7', '#f59e0b', '#ec4899', '#6366f1'];
+      ctx.clearRect(0, 0, 260, 260);
+      items.forEach((item, i) => {
+        const angle = i * arc;
+        ctx.beginPath();
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.moveTo(130, 130);
+        ctx.arc(130, 130, 120, angle, angle + arc);
+        ctx.lineTo(130, 130);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(130, 130);
+        ctx.rotate(angle + arc / 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'right';
+        const text = typeof item === 'object' ? `Q${item.id}` : item;
+        ctx.fillText(text, 105, 4);
+        ctx.restore();
+      });
+    }
+
+    function renderCards() {
+      const container = document.getElementById('flashcard-container');
+      container.innerHTML = '';
+      document.getElementById('q-count').innerText = questions.length;
+      questions.forEach((q) => {
+        const isAnswered = !activeQuestions.some(aq => aq.id === q.id);
+        const card = document.createElement('div');
+        card.className = `flashcard ${isAnswered ? 'answered' : ''}`;
+        card.innerHTML = `<div style="font-weight:800; color:var(--accent-green);">Асуулт ${q.id}</div><div>${q.q}</div>`;
+        card.onclick = () => showQuestionModal(q);
+        container.appendChild(card);
+      });
+    }
+
+    let isSpinning = false;
+    function spinStudent() {
+      if(isSpinning) return;
+      const list = students[currentClass];
+      if(!list || list.length === 0) return alert("Сурагч байхгүй байна!");
+      isSpinning = true;
+      let duration = 2000, start = Date.now();
+      let timer = setInterval(() => {
+        let elapsed = Date.now() - start;
+        if(elapsed > duration) {
+          clearInterval(timer); isSpinning = false;
+          let selected = list[Math.floor(Math.random() * list.length)];
+          showResult("🎯 Сонгогдсон сурагч:", selected);
+          confetti({ particleCount: 50, spread: 60 });
+        } else {
+          drawWheel('studentWheel', rotateArray(list, Math.floor(elapsed / 100)));
+        }
+      }, 50);
+    }
+
+    function spinQuestion() {
+      if(isSpinning) return;
+      if(activeQuestions.length === 0) return alert("Асуулт дууссан байна!");
+      isSpinning = true;
+      let duration = 2000, start = Date.now();
+      let timer = setInterval(() => {
+        let elapsed = Date.now() - start;
+        if(elapsed > duration) {
+          clearInterval(timer); isSpinning = false;
+          let selected = activeQuestions[Math.floor(Math.random() * activeQuestions.length)];
+          showQuestionModal(selected);
+          confetti({ particleCount: 50, spread: 60 });
+        } else {
+          drawWheel('questionWheel', rotateArray(activeQuestions, Math.floor(elapsed / 100)));
+        }
+      }, 50);
+    }
+
+    function rotateArray(arr, count) {
+      let copy = [...arr];
+      for(let i = 0; i < count % arr.length; i++) copy.push(copy.shift());
+      return copy;
+    }
+
+    function showQuestionModal(q) {
+      document.getElementById('result-title').innerText = `❓ Асуулт ${q.id}`;
+      document.getElementById('result-body').innerText = q.q;
+      const ansBox = document.getElementById('q-answer-box');
+      const ansText = document.getElementById('ans-text');
+      const toggleBtn = document.getElementById('toggle-ans-btn');
+      ansBox.style.display = 'block'; toggleBtn.style.display = 'inline-block'; ansText.style.display = 'none';
+      ansText.innerHTML = `<b>Зөв хариулт:</b> ${q.a}`;
+
+      const isAnswered = !activeQuestions.some(aq => aq.id === q.id);
+      document.getElementById('result-actions').innerHTML = `
+        ${!isAnswered ? `<button class="spin-btn" style="background:var(--accent-green)" onclick="markAnswered(${q.id})">✅ Зөв хариулсан (Хасах)</button>` : ''}
+        <button class="spin-btn" style="background:rgba(255,255,255,0.1); color:#fff;" onclick="closeResult()">Алгасах</button>
+      `;
+      document.getElementById('resultModal').classList.add('active');
+    }
+
+    function revealAnswer() {
+      document.getElementById('toggle-ans-btn').style.display = 'none';
+      document.getElementById('ans-text').style.display = 'block';
+    }
+
+    function markAnswered(qId) {
+      activeQuestions = activeQuestions.filter(q => q.id !== qId);
+      drawWheel('questionWheel', activeQuestions);
+      renderCards(); closeResult();
+    }
+
+    function resetQuestions() {
+      activeQuestions = [...questions];
+      drawWheel('questionWheel', activeQuestions); renderCards();
+    }
+
+    function showResult(title, body) {
+      document.getElementById('result-title').innerText = title;
+      document.getElementById('result-body').innerText = body;
+      document.getElementById('q-answer-box').style.display = 'none';
+      document.getElementById('result-actions').innerHTML = `<button class="spin-btn" onclick="closeResult()">Хаах</button>`;
+      document.getElementById('resultModal').classList.add('active');
+    }
+
+    function closeResult() { document.getElementById('resultModal').classList.remove('active'); }
+
+    // --- MATCHING ---
+    let selectedLeft = null, selectedRight = null;
+    function initMatchingGame() {
+      const leftCol = document.getElementById('match-left');
+      const rightCol = document.getElementById('match-right');
+      leftCol.innerHTML = ''; rightCol.innerHTML = '';
+      if(matchPairs.length === 0) {
+        leftCol.innerHTML = `<div style="color:var(--text-muted)">Асуулт байхгүй байна.</div>`;
+        return;
+      }
+      let lefts = [...matchPairs].sort(() => Math.random() - 0.5);
+      let rights = [...matchPairs].sort(() => Math.random() - 0.5);
+
+      lefts.forEach((p) => {
+        let div = document.createElement('div');
+        div.className = 'match-card'; div.innerText = p.left;
+        div.onclick = () => selectMatch('left', p.left, div);
+        leftCol.appendChild(div);
+      });
+      rights.forEach((p) => {
+        let div = document.createElement('div');
+        div.className = 'match-card'; div.innerText = p.right;
+        div.onclick = () => selectMatch('right', p.right, div);
+        rightCol.appendChild(div);
+      });
+    }
+
+    function selectMatch(side, val, el) {
+      if(el.classList.contains('matched')) return;
+      if(side === 'left') {
+        document.querySelectorAll('#match-left .match-card').forEach(c => c.classList.remove('selected'));
+        selectedLeft = { val, el }; el.classList.add('selected');
+      } else {
+        document.querySelectorAll('#match-right .match-card').forEach(c => c.classList.remove('selected'));
+        selectedRight = { val, el }; el.classList.add('selected');
+      }
+
+      if(selectedLeft && selectedRight) {
+        let pair = matchPairs.find(p => p.left === selectedLeft.val);
+        if(pair && pair.right === selectedRight.val) {
+          selectedLeft.el.classList.add('matched'); selectedRight.el.classList.add('matched');
+          confetti({ particleCount: 30, spread: 50 });
+        }
+        selectedLeft.el.classList.remove('selected'); selectedRight.el.classList.remove('selected');
+        selectedLeft = null; selectedRight = null;
+      }
+    }
+
+    // --- WORDLE ---
+    let currentWordObj, guessedLetters = [];
+    function initWordGame() {
+      if(wordList.length === 0) {
+        document.getElementById('word-hint').innerText = "Үг байхгүй байна.";
+        document.getElementById('word-display').innerText = "---";
+        return;
+      }
+      currentWordObj = wordList[Math.floor(Math.random() * wordList.length)];
+      guessedLetters = [];
+      document.getElementById('word-hint').innerText = "💡 Заавар: " + currentWordObj.hint;
+      updateWordDisplay(); renderKeyboard();
+    }
+
+    function updateWordDisplay() {
+      let display = "";
+      for(let char of currentWordObj.word.toUpperCase()) {
+        if(guessedLetters.includes(char)) display += char + " ";
+        else display += "_ ";
+      }
+      document.getElementById('word-display').innerText = display;
+      if(!display.includes('_')) confetti({ particleCount: 100, spread: 70 });
+    }
+
+    function renderKeyboard() {
+      const kb = document.getElementById('keyboard');
+      kb.innerHTML = '';
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(let => {
+        let b = document.createElement('button');
+        b.className = 'key-btn'; b.innerText = let;
+        b.onclick = () => { guessedLetters.push(let); b.disabled = true; updateWordDisplay(); };
+        kb.appendChild(b);
+      });
+    }
+
+    // --- MEMORY (Geography Emojis) ---
+    const memIcons = ["🌍", "🌋", "🏔️", "🌊", "🏜️", "🏝️", "🧭", "🗺️"];
+    let flippedCards = [];
+    function initMemoryGame() {
+      const grid = document.getElementById('memory-grid');
+      grid.innerHTML = '';
+      let deck = [...memIcons, ...memIcons].sort(() => Math.random() - 0.5);
+      deck.forEach((icon) => {
+        let card = document.createElement('div');
+        card.className = 'mem-card'; card.dataset.icon = icon; card.innerText = '❓';
+        card.onclick = () => flipMemCard(card);
+        grid.appendChild(card);
+      });
+    }
+
+    function flipMemCard(card) {
+      if(card.classList.contains('flipped') || card.classList.contains('matched') || flippedCards.length >= 2) return;
+      card.classList.add('flipped'); card.innerText = card.dataset.icon;
+      flippedCards.push(card);
+
+      if(flippedCards.length === 2) {
+        if(flippedCards[0].dataset.icon === flippedCards[1].dataset.icon) {
+          flippedCards[0].classList.add('matched'); flippedCards[1].classList.add('matched');
+          flippedCards = [];
+        } else {
+          setTimeout(() => {
+            flippedCards.forEach(c => { c.classList.remove('flipped'); c.innerText = '❓'; });
+            flippedCards = [];
+          }, 800);
+        }
+      }
+    }
+
+    // --- SPEED QUIZ ---
+    let quizIdx = 0, quizScore = 0;
+    function initSpeedQuiz() { quizIdx = 0; quizScore = 0; showQuizQuestion(); }
+    function showQuizQuestion() {
+      if(questions.length === 0) { document.getElementById('quiz-question').innerText = "Асуулт байхгүй байна."; return; }
+      if(quizIdx >= questions.length) {
+        document.getElementById('quiz-question').innerText = `🏆 Тоглоом дууслаа! Оноо: ${quizScore} / ${questions.length}`;
+        document.getElementById('quiz-options').innerHTML = `<button class="spin-btn" onclick="initSpeedQuiz()">Дахин тоглох</button>`;
+        confetti({ particleCount: 100, spread: 80 });
+        return;
+      }
+      let q = questions[quizIdx];
+      document.getElementById('quiz-progress').innerText = `${quizIdx + 1}/${questions.length}`;
+      document.getElementById('quiz-score').innerText = quizScore;
+      document.getElementById('quiz-question').innerText = q.q;
+
+      let choices = [q.a, "Буруу хариулт А", "Буруу хариулт Б", "Мэдэхгүй"].sort(() => Math.random() - 0.5);
+      const optsDiv = document.getElementById('quiz-options');
+      optsDiv.innerHTML = '';
+      choices.forEach(c => {
+        let b = document.createElement('button');
+        b.className = 'opt-btn'; b.innerText = c;
+        b.onclick = () => { if(c === q.a) quizScore++; quizIdx++; showQuizQuestion(); };
+        optsDiv.appendChild(b);
+      });
+    }
+
+    // --- ADMIN PANEL ---
+    function openAdmin() {
+      if(prompt("Админ нууц үгээ оруулна уу:") === "1234") {
+        loadAdminStudents(); renderAdminQuestions(); renderAdminMatching(); renderAdminWords();
+        document.getElementById('adminModal').classList.add('active');
+      } else { alert("Буруу код!"); }
+    }
+    function closeAdmin() { document.getElementById('adminModal').classList.remove('active'); }
+
+    function switchAdminSection(secId) {
+      document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(`admin-${secId}`).classList.add('active');
+    }
+
+    function loadAdminStudents() {
+      const cls = document.getElementById('admin-class-select').value;
+      document.getElementById('admin-student-list').value = students[cls] ? students[cls].join(", ") : "";
+    }
+    function saveStudents() {
+      const cls = document.getElementById('admin-class-select').value;
+      students[cls] = document.getElementById('admin-student-list').value.split(',').map(s=>s.trim()).filter(s=>s.length);
+      localStorage.setItem('geo_students', JSON.stringify(students));
+      drawWheel('studentWheel', students[currentClass]);
+      alert("Сурагчдын жагсаалт хадгалагдлаа!");
+    }
+
+    function addQuestion() {
+      let qText = document.getElementById('new-q-text').value.trim();
+      let qAns = document.getElementById('new-q-ans').value.trim();
+      if(!qText || !qAns) return alert("Асуулт ба хариултыг бөглөнө үү!");
+      questions.push({ id: questions.length + 1, q: qText, a: qAns });
+      activeQuestions = [...questions];
+      localStorage.setItem('geo_questions', JSON.stringify(questions));
+      renderCards(); drawWheel('questionWheel', activeQuestions); renderAdminQuestions();
+      document.getElementById('new-q-text').value = ''; document.getElementById('new-q-ans').value = '';
+    }
+    function renderAdminQuestions() {
+      const div = document.getElementById('admin-questions-list'); div.innerHTML = '';
+      questions.forEach((q, i) => {
+        div.innerHTML += `<div class="admin-item"><span><b>Q${i+1}:</b> ${q.q}</span><button class="del-btn" onclick="deleteQ(${q.id})">Устгах</button></div>`;
+      });
+    }
+    function deleteQ(id) {
+      questions = questions.filter(q => q.id !== id); activeQuestions = [...questions];
+      localStorage.setItem('geo_questions', JSON.stringify(questions));
+      renderCards(); drawWheel('questionWheel', activeQuestions); renderAdminQuestions();
+    }
+    function deleteAllQuestions() {
+      if(confirm("Бүх асуултыг устгах уу?")) {
+        questions = []; activeQuestions = [];
+        localStorage.setItem('geo_questions', JSON.stringify(questions));
+        renderCards(); drawWheel('questionWheel', activeQuestions); renderAdminQuestions();
+      }
+    }
+
+    function addMatchPair() {
+      let l = document.getElementById('new-m-left').value.trim();
+      let r = document.getElementById('new-m-right').value.trim();
+      if(!l || !r) return alert("Утгыг бөглөнө үү!");
+      matchPairs.push({ left: l, right: r });
+      localStorage.setItem('geo_match_pairs', JSON.stringify(matchPairs));
+      renderAdminMatching();
+      document.getElementById('new-m-left').value = ''; document.getElementById('new-m-right').value = '';
+    }
+    function renderAdminMatching() {
+      const div = document.getElementById('admin-matching-list'); div.innerHTML = '';
+      matchPairs.forEach((p, i) => {
+        div.innerHTML += `<div class="admin-item"><span><b>${p.left}</b> ➔ ${p.right}</span><button class="del-btn" onclick="deleteMatchPair(${i})">Устгах</button></div>`;
+      });
+    }
+    function deleteMatchPair(idx) {
+      matchPairs.splice(idx, 1); localStorage.setItem('geo_match_pairs', JSON.stringify(matchPairs)); renderAdminMatching();
+    }
+
+    function addWordPair() {
+      let w = document.getElementById('new-w-word').value.trim().toUpperCase();
+      let h = document.getElementById('new-w-hint').value.trim();
+      if(!w || !h) return alert("Бөглөнө үү!");
+      wordList.push({ word: w, hint: h });
+      localStorage.setItem('geo_word_list', JSON.stringify(wordList));
+      renderAdminWords();
+      document.getElementById('new-w-word').value = ''; document.getElementById('new-w-hint').value = '';
+    }
+    function renderAdminWords() {
+      const div = document.getElementById('admin-word-list'); div.innerHTML = '';
+      wordList.forEach((w, i) => {
+        div.innerHTML += `<div class="admin-item"><span><b>${w.word}</b> (${w.hint})</span><button class="del-btn" onclick="deleteWordPair(${i})">Устгах</button></div>`;
+      });
+    }
+    function deleteWordPair(idx) {
+      wordList.splice(idx, 1); localStorage.setItem('geo_word_list', JSON.stringify(wordList)); renderAdminWords();
+    }
+
+    // Init Page
+    drawWheel('studentWheel', students[currentClass]);
+    drawWheel('questionWheel', activeQuestions);
+    renderCards();
+  </script>
+</body>
+</html>
